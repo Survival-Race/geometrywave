@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <title>Wave Game</title>
 <style>
-  body { margin:0; overflow:hidden; background:#111; }
+  body { margin:0; overflow:hidden; background:#111; font-family:sans-serif; color:white; }
   canvas { display:block; background:#111; }
+  #score { position:absolute; top:10px; left:10px; font-size:24px; }
 </style>
 </head>
 <body>
+<div id="score">Score: 0</div>
 <canvas id="gameCanvas"></canvas>
 <script>
 const canvas = document.getElementById('gameCanvas');
@@ -17,58 +19,101 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let x = 100;
-let y = canvas.height / 2;
-let speed = 4;
+let y = canvas.height/2;
+let baseSpeed = 4;
+let speed = baseSpeed;
 let angle = 0;
 let up = false;
+let down = false;
+let score = 0;
 
-// obstacles
+// Obstacles array
 let obstacles = [];
 for(let i=0; i<5; i++){
-    obstacles.push({x:canvas.width + i*400, y:Math.random()*canvas.height/2, width:40, height:200});
+    obstacles.push({
+        x: canvas.width + i*400,
+        y: Math.random()*(canvas.height-200),
+        width: 40,
+        height: 100 + Math.random()*200
+    });
 }
 
-document.addEventListener('keydown', e => { if(e.key === 'ArrowUp') up = true; });
-document.addEventListener('keyup', e => { if(e.key === 'ArrowUp') up = false; });
+// Key controls
+document.addEventListener('keydown', e => { 
+    if(e.key === 'ArrowUp') up = true; 
+    if(e.key === 'ArrowDown') down = true; 
+});
+document.addEventListener('keyup', e => { 
+    if(e.key === 'ArrowUp') up = false; 
+    if(e.key === 'ArrowDown') down = false; 
+});
 
 function draw() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    
-    // player wave movement
-    angle += speed * 0.02;
-    y += Math.sin(angle)*2;
-    if(up) y -= 7;
 
-    // draw obstacles
+    // Draw visible border
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+    // Increase speed gradually
+    speed += 0.001;
+
+    // Gravity + wave motion
+    y += 2 + Math.sin(angle)*3; // gravity + wave
+    if(up) y -= 7;
+    if(down) y += 5;
+    angle += 0.05;
+
+    // Keep player inside canvas
+    if(y < 20) y = 20;
+    if(y > canvas.height - 20) y = canvas.height - 20;
+
+    // Draw obstacles
     ctx.fillStyle = 'red';
     for(let obs of obstacles){
         obs.x -= speed;
+
+        // Reset obstacle when off-screen
         if(obs.x + obs.width < 0){
             obs.x = canvas.width + Math.random()*400;
             obs.y = Math.random()*(canvas.height-200);
+            obs.height = 100 + Math.random()*200;
+            score++;
+            document.getElementById('score').innerText = 'Score: ' + score;
         }
+
         ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-        // collision detection
+        // Collision detection
         if(x + 20 > obs.x && x - 20 < obs.x + obs.width &&
            y + 20 > obs.y && y - 20 < obs.y + obs.height){
-            alert('Game Over!');
-            x = 100;
-            y = canvas.height/2;
-            angle = 0;
-            for(let i=0; i<obstacles.length; i++){
-                obstacles[i].x = canvas.width + i*400;
-            }
+            alert('Game Over! Score: ' + score);
+            resetGame();
         }
     }
 
-    // draw player
+    // Draw player
     ctx.fillStyle = 'cyan';
     ctx.beginPath();
     ctx.arc(x, y, 20, 0, Math.PI*2);
     ctx.fill();
 
     requestAnimationFrame(draw);
+}
+
+function resetGame(){
+    x = 100;
+    y = canvas.height/2;
+    angle = 0;
+    speed = baseSpeed;
+    score = 0;
+    document.getElementById('score').innerText = 'Score: ' + score;
+    for(let i=0; i<obstacles.length; i++){
+        obstacles[i].x = canvas.width + i*400;
+        obstacles[i].y = Math.random()*(canvas.height-200);
+        obstacles[i].height = 100 + Math.random()*200;
+    }
 }
 
 draw();
