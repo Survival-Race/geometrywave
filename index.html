@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wave Game</title>
+<style>
+  body { margin:0; overflow:hidden; background:#111; }
+  canvas { display:block; background:#111; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let x = 100;
+let y = canvas.height / 2;
+let speed = 4;
+let angle = 0;
+let up = false;
+
+// obstacles
+let obstacles = [];
+for(let i=0; i<5; i++){
+    obstacles.push({x:canvas.width + i*400, y:Math.random()*canvas.height/2, width:40, height:200});
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'ArrowUp') up = true; });
+document.addEventListener('keyup', e => { if(e.key === 'ArrowUp') up = false; });
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    
+    // player wave movement
+    angle += speed * 0.02;
+    y += Math.sin(angle)*2;
+    if(up) y -= 7;
+
+    // draw obstacles
+    ctx.fillStyle = 'red';
+    for(let obs of obstacles){
+        obs.x -= speed;
+        if(obs.x + obs.width < 0){
+            obs.x = canvas.width + Math.random()*400;
+            obs.y = Math.random()*(canvas.height-200);
+        }
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+        // collision detection
+        if(x + 20 > obs.x && x - 20 < obs.x + obs.width &&
+           y + 20 > obs.y && y - 20 < obs.y + obs.height){
+            alert('Game Over!');
+            x = 100;
+            y = canvas.height/2;
+            angle = 0;
+            for(let i=0; i<obstacles.length; i++){
+                obstacles[i].x = canvas.width + i*400;
+            }
+        }
+    }
+
+    // draw player
+    ctx.fillStyle = 'cyan';
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI*2);
+    ctx.fill();
+
+    requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
